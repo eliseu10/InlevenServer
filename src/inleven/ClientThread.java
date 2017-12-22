@@ -6,7 +6,7 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ClientThread implements Runnable {
+public class ClientThread extends Thread{
 
     private static Socket ClientSock = null;
     private static ObjectOutputStream out = null;
@@ -36,15 +36,21 @@ public class ClientThread implements Runnable {
 
                 // Make login
                 if (hr.typeRequest.equals("login")) {
-                    /*
-                    if (db.ConfirmLogin(hr.username, hr.password)) {
-                        hr.sucessLogin = true;
-                        System.out.println("Login with sucess.");
-                    } else {
+                    int value = db.ConfirmLogin(hr.username, hr.password);
+                    if (value == 0) {
                         hr.sucessLogin = false;
                         System.out.println("Login refused.");
-                    }*/
-                    hr.sucessLogin = true;
+                    }
+                    if (value == 1){
+                        hr.sucessLogin = true;
+                        hr.patient = true;
+                        System.out.println("Login patient accepted.");
+                    }
+                    if (value == 2) {
+                        hr.sucessLogin = true;
+                        hr.patient = false;
+                        System.out.println("Login volunteer accepted.");
+                    } 
 
                 }
                 if (hr.typeRequest.equals("register")) {
@@ -57,9 +63,12 @@ public class ClientThread implements Runnable {
                 }
 
                 out.writeObject(hr);
+                
             }
+            
         } catch (Exception ex) {
             Logger.getLogger(ClientThread.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
     }
 }
