@@ -15,29 +15,14 @@ public class ActualState implements Serializable{
 	boolean sucessLogin = false;
 	
 	//register fiedls
-	String email = null;
 	boolean patient;
+        String phone;
 	
 	//request fields
 	String local = null;
+        String helpType = null;
+        String [][] requestState = null;
 	
 	//volunteer added to request 
 	String volunteer = null;
-	
-	void login() {
-		
-	}
-	
-	void register() {
-		
-	}
-	
-	void sendRequest() {
-		
-	}
-	
-	
-	public void addVolunteer(String v){
-		volunteer = v;
-	}
 }
