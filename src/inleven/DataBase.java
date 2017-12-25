@@ -30,7 +30,7 @@ public class DataBase {
 	 *                            BASIC FUNTIONS
 	 * ************************************************************************
      */
-    private void ConnectDB() throws Exception {
+    private synchronized void ConnectDB() throws Exception {
 
         // STEP 2: Register JDBC driver
         Class.forName(JDBC_DRIVER);
@@ -42,7 +42,7 @@ public class DataBase {
         stmt = conn.createStatement();
     }
 
-    private ResultSet SearchDB(String sql) throws Exception {
+    private synchronized ResultSet SearchDB(String sql) throws Exception {
         // STEP 4: Execute a query
         System.out.println("Creating statement...");
         rs = stmt.executeQuery(sql);
@@ -55,13 +55,13 @@ public class DataBase {
         stmt.executeUpdate(sql);
     }
 
-    private void UpdateDB(String sql) throws Exception {
+    private synchronized void UpdateDB(String sql) throws Exception {
         // STEP 4: Execute a query
         System.out.println("Updating statement...");
         stmt.executeUpdate(sql);
     }
 
-    public void CloseDB() throws SQLException {
+    private synchronized void CloseDB() throws SQLException {
         // STEP 6: Clean-up environment
         stmt.close();
         conn.close();
@@ -73,7 +73,7 @@ public class DataBase {
 	 *                            OTHER FUNTIONS
 	 * ************************************************************************
      */
-    public ActualState ConfirmLogin(ActualState hr) throws Exception {
+    public synchronized ActualState ConfirmLogin(ActualState hr) throws Exception {
         this.ConnectDB();
 
         // Display values
@@ -108,10 +108,11 @@ public class DataBase {
         
         rs.close();
         this.CloseDB();
+        System.out.println("Database is closed.");
         return hr;
     }
 
-    public void MakeRegister(String username, String password, String phone, String local, boolean patient) throws Exception {
+    public synchronized void MakeRegister(String username, String password, String phone, String local, boolean patient) throws Exception {
         this.ConnectDB();
 
         // Display values
@@ -144,9 +145,10 @@ public class DataBase {
 
         rs.close();
         this.CloseDB();
+        System.out.println("Database is closed.");
     }
 
-    public void MakeRequest(String username, String local, String helpType) throws Exception {
+    public synchronized void MakeRequest(String username, String local, String helpType) throws Exception {
         this.ConnectDB();
         
         // Display values
@@ -160,15 +162,16 @@ public class DataBase {
         System.out.println("Insertion with sucess.");
         
         this.CloseDB();
+        System.out.println("Database is closed.");
     }
 
-    public void SetVolunteerField(String username, String local) throws Exception {
-        this.ConnectDB();
-        String id = null;
-
+    public synchronized void SetVolunteerField(String username, String local) throws Exception {
         // Display values
         System.out.println("Set volunteer field...");
-        System.out.println("Username: " + username + ", Local: " + local);
+        System.out.println("Username: " + username + ", Local: " + local);        
+        
+        this.ConnectDB();
+        String id = null;
 
         //search for help request in the same localization
         String query = "SELECT \"ID\" "
@@ -177,7 +180,7 @@ public class DataBase {
         
         rs = this.SearchDB(query);
 
-        while (rs.next()) {
+        if (rs.next()) {
             id = rs.getString(1);
             System.out.println("RequestID: " + id);
             
@@ -189,27 +192,25 @@ public class DataBase {
             this.UpdateDB(query);
             System.out.println("Update with sucess.");
             
-            //only for the first help request
-            break;
         }
         
         rs.close();
         this.CloseDB();
+        System.out.println("Database is closed.");
     }
 
-    public ActualState VerifyHelpRequest(ActualState hr) throws Exception {
-        System.out.println("Search for help requests...");
-        this.ConnectDB();
-        
+    public synchronized ActualState VerifyHelpRequest(ActualState hr) throws Exception {
         // Display values
         System.out.println("Search for help requests...");
         System.out.println("Username: " + hr.username + ", Patient: " + hr.patient);
+        
+        this.ConnectDB();
         
         String query = null;
         int rows = 0;
         if (hr.patient == true) {
             //is a patient
-            //search for help request in the same localization
+            //search number of rows
             query = "SELECT Count(*)"
                     + "FROM public.\"HelpRequest\""
                     + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL;";
@@ -243,18 +244,61 @@ public class DataBase {
         rs = this.SearchDB(query);
         
         hr.requestState = new String[rows][3];
-        int i=0;
-        while (rs.next()){
+        for (int i = 0; rs.next(); i++) {
             hr.requestState[i][0] = rs.getString(1);
             hr.requestState[i][1] = rs.getString(2);
             hr.requestState[i][2] = rs.getString(3);
             System.out.println("Help type: " + hr.requestState[i][0] + ", Local: " + hr.requestState[i][1] + ", "
                     + "Username: " + hr.requestState[i][2] + "");
-            i++;
         }
         
         rs.close();
         this.CloseDB();
+        System.out.println("Database is closed.");
+        return hr;
+    }
+    
+    public synchronized ActualState SearchVolunteerDetails(ActualState hr) throws Exception {
+        System.out.println("Search for volunteer details...");
+        this.ConnectDB();
+
+        //search number of rows
+        String query = "SELECT Count(*)"
+                + "FROM public.\"HelpRequest\""
+                + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL "
+                + "GROUP BY \"Volunteer\";";
+        rs = this.SearchDB(query);
+        rs.next();
+        int rows = rs.getInt(1);
+        hr.VolunteerContacts = new String[rows][2];
+        System.out.println("Number of rows: " + rows);
+
+        //Search volunteer names
+        query = "SELECT \"Volunteer\""
+                + "FROM public.\"HelpRequest\""
+                + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL"
+                + "GROUP BY \"Volunteer\";";
+
+        rs = this.SearchDB(query);
+        
+        for (int i = 0; rs.next(); i++) {
+            hr.VolunteerContacts[i][0] = rs.getString(1);
+            System.out.println("Volunteer name: " + hr.VolunteerContacts[i][0]);
+        }
+        
+        //search for phone number volunteers
+        for (int i = 0; rs.next(); i++) {
+            query = "SELECT \"Phone\""
+                    + "FROM public.\"Users\" "
+                    + "WHERE \"Username\"='" + hr.VolunteerContacts[i][0] + "'";
+            rs = this.SearchDB(query);
+            rs.next();
+            hr.VolunteerContacts[i][1] = rs.getString(1);
+        }
+        
+        rs.close();
+        this.CloseDB();
+        System.out.println("Database is closed.");
         return hr;
     }
 

@@ -25,4 +25,5 @@ public class ActualState implements Serializable{
 	
 	//volunteer added to request 
 	String volunteer = null;
+        String [][] VolunteerContacts = null;
 }
