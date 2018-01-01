@@ -263,8 +263,8 @@ public class DataBase {
         this.ConnectDB();
 
         //search number of rows
-        String query = "SELECT Count(*)"
-                + "FROM public.\"HelpRequest\""
+        String query = "SELECT COUNT(DISTINCT \"Volunteer\") "
+                + "FROM public.\"HelpRequest\" "
                 + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL "
                 + "GROUP BY \"Volunteer\";";
         rs = this.SearchDB(query);
@@ -274,9 +274,9 @@ public class DataBase {
         System.out.println("Number of rows: " + rows);
 
         //Search volunteer names
-        query = "SELECT \"Volunteer\""
-                + "FROM public.\"HelpRequest\""
-                + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL"
+        query = "SELECT \"Volunteer\" "
+                + "FROM public.\"HelpRequest\" "
+                + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL "
                 + "GROUP BY \"Volunteer\";";
 
         rs = this.SearchDB(query);
@@ -287,8 +287,8 @@ public class DataBase {
         }
         
         //search for phone number volunteers
-        for (int i = 0; rs.next(); i++) {
-            query = "SELECT \"Phone\""
+        for (int i = 0; i < rows; i++) {
+            query = "SELECT \"Phone\" "
                     + "FROM public.\"Users\" "
                     + "WHERE \"Username\"='" + hr.VolunteerContacts[i][0] + "'";
             rs = this.SearchDB(query);
