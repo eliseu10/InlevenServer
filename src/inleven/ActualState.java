@@ -22,6 +22,11 @@ public class ActualState implements Serializable{
 	String local = null;
         String helpType = null;
         String [][] requestState = null;
+        
+        //classify request
+        String IDreq = null;
+        String Classification = null;
+        String [][] ranking = null;
 	
 	//volunteer added to request 
 	String volunteer = null;

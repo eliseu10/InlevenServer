@@ -220,7 +220,7 @@ public class DataBase {
             System.out.println("Number of rows: " + rows);
 
             //search for help request in the same localization
-            query = "SELECT \"HelpType\", \"Localization\", \"Volunteer\""
+            query = "SELECT \"ID\", \"HelpType\", \"Localization\", \"Volunteer\""
                     + "FROM public.\"HelpRequest\""
                     + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL;";
 
@@ -237,19 +237,21 @@ public class DataBase {
             System.out.println("Number of rows: " + rows);
             
             //search for help request in the same localization
-            query = "SELECT \"HelpType\", \"Localization\", \"Patient\""
+            query = "SELECT \"ID\", \"HelpType\", \"Localization\", \"Patient\""
                     + "FROM public.\"HelpRequest\""
                     + "WHERE \"Volunteer\"='" + hr.username + "' AND \"Patient\" IS NOT NULL;";
         }
         rs = this.SearchDB(query);
         
-        hr.requestState = new String[rows][3];
+        hr.requestState = new String[rows][4];
         for (int i = 0; rs.next(); i++) {
             hr.requestState[i][0] = rs.getString(1);
             hr.requestState[i][1] = rs.getString(2);
             hr.requestState[i][2] = rs.getString(3);
-            System.out.println("Help type: " + hr.requestState[i][0] + ", Local: " + hr.requestState[i][1] + ", "
-                    + "Username: " + hr.requestState[i][2] + "");
+            hr.requestState[i][3] = rs.getString(4);
+            System.out.println("ID: " + hr.requestState[i][0] + ", Help type: " + hr.requestState[i][1] + ", "
+                    + "Local: " + hr.requestState[i][2] + ", "
+                    + "Username: " + hr.requestState[i][3] + "");
         }
         
         rs.close();
@@ -265,8 +267,7 @@ public class DataBase {
         //search number of rows
         String query = "SELECT COUNT(DISTINCT \"Volunteer\") "
                 + "FROM public.\"HelpRequest\" "
-                + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL "
-                + "GROUP BY \"Volunteer\";";
+                + "WHERE \"Patient\"='" + hr.username + "' AND \"Volunteer\" IS NOT NULL;";
         rs = this.SearchDB(query);
         rs.next();
         int rows = rs.getInt(1);
@@ -301,5 +302,86 @@ public class DataBase {
         System.out.println("Database is closed.");
         return hr;
     }
+    public synchronized ActualState SetWorkClassification(ActualState hr) throws Exception {
+        System.out.println("Inserting the classification of a work...");
+        this.ConnectDB();
+        System.out.println("ID: " + hr.IDreq + ", Classifcation: " + hr.Classification + "");
+        
+        String query = "UPDATE public.\"HelpRequest\" "
+                + "SET \"Classification\"='" + hr.Classification + "' "
+                + "WHERE \"ID\"=" + hr.IDreq + ";";
+        this.UpdateDB(query);
+        System.out.println("Update with sucess.");
 
+        
+        this.CloseDB();
+        System.out.println("Database is closed.");
+        return hr;
+    }
+    
+    public synchronized ActualState ConfigVolunteerRank(ActualState hr) throws Exception{
+        System.out.println("Inserting the classification of a work...");
+        this.ConnectDB();
+        
+        //search number of rows
+        String query = "SELECT COUNT(*) "
+                + "FROM public.\"HelpRequest\" "
+                + "WHERE \"Volunteer\"='" + hr.username + "' ";
+        rs = this.SearchDB(query);
+        rs.next();
+        int rows = rs.getInt(1);
+        
+        //Search for the classifications of this volunteer
+        query = "SELECT \"Classification\" "
+                + "FROM public.\"HelpRequest\" "
+                + "WHERE \"Volunteer\"='" + hr.username + "' ;";
+        rs = this.SearchDB(query);
+        rs.next();
+        
+        int rank = 0;
+        for (int i = 0; i < rows; i++) {
+            rank = rank + rs.getInt(1);
+            rs.next();
+        }
+        
+        if (rows > 0) {
+            //Update the value of ranking in this volunteer
+            query = "UPDATE public.\"Users\" "
+                    + "SET \"Rank\"=" + (rank / rows) + " "
+                    + "WHERE \"Username\" = '" + hr.username + "' ;";
+            this.UpdateDB(query);
+            System.out.println("Username: " + hr.username + ", Rank: " + rank + "");
+            System.out.println("Update with sucess.");
+        }
+        
+        //Search the number off volunteer
+        query = "SELECT COUNT(*) "
+                + "FROM public.\"Users\" "
+                + "WHERE \"Patient\"=false ";
+        rs = this.SearchDB(query);
+        rs.next();
+        rows = rs.getInt(1);
+        hr.ranking = new String[rows][2];
+        System.out.println("Number of volunteers: " + rows);
+        
+        //Get the table rank of all volunteers
+        query = "SELECT \"Username\",\"Rank\" "
+                + "FROM public.\"Users\" "
+                + "WHERE \"Patient\"=false "
+                + "ORDER BY \"Rank\" DESC ";
+        rs = this.SearchDB(query);
+        rs.next();
+        
+        for (int i = 0; i < rows; i++) {
+            hr.ranking[i][0] = rs.getString(1);
+            hr.ranking[i][1] = rs.getString(2);
+            System.out.println("Username: " + hr.ranking[i][0] + ", Rank: " + hr.ranking[i][1] + "");
+            rs.next();
+        }
+       
+        rs.close();
+        this.CloseDB();
+        System.out.println("Database is closed.");
+        return hr;
+    }
 }

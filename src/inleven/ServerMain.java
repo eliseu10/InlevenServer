@@ -11,7 +11,7 @@ public class ServerMain {
 
     public static void main(String[] args) throws Exception {
         // TODO Auto-generated method stub
-        int ServerPort = 5050;
+        int ServerPort = 5453;
         serverSock = new ServerSocket(ServerPort);
 
         while (serverSock.isClosed() == false) {

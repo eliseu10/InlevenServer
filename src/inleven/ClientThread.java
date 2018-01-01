@@ -60,6 +60,15 @@ public class ClientThread extends Thread{
                 if(hr.typeRequest.equals("volunteerdetails")){
                     hr = db.SearchVolunteerDetails(hr);
                 }
+                //classify a request
+                if(hr.typeRequest.equals("classifywork")){
+                    hr = db.SetWorkClassification(hr);
+                }
+                //classify a request
+                if (hr.typeRequest.equals("checkranking")) {
+                    hr = db.ConfigVolunteerRank(hr);
+                }
+                //disconect a client from the server
                 if(hr.typeRequest.equals("shutdown")){
                     shutdown = true;
                     System.out.println("Client disconecting...");
